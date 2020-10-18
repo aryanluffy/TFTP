@@ -224,6 +224,10 @@ int main(int argc,char ** argv) {
             char *towritetofile=malloc(MAXN);
             char *towritetofileitr=towritetofile;
             for(int i=4;i<NumberOfBytesReceived;i++)towritetofile[i-4]=response[i];
+            if(response[0]=='D'){
+                    printf("%s\n",response);
+                    continue;
+            }
             while(NumberOfBytesReceived>4){
                 write(fd,towritetofile,NumberOfBytesReceived-4);
                 response=acknowledgement();     

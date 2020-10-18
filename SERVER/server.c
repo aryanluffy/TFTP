@@ -146,7 +146,17 @@ int main(int argc,char **argv) {
             filename[n-9]='\0';
             // printf("%s\n",filename);
             fd=open(filename,O_RDONLY,0777);
+            if(fd>-1)
             response_read_request(cliaddr,len);
+            else{
+                printf("Does Not Exist\n");
+                char *toput=malloc(MAXN);
+                toput="DOES NOT EXIST ON SERVER";
+                sendto(sockfd, (const char *)toput, strlen(toput),  
+                    MSG_CONFIRM, (const struct sockaddr *) &cliaddr, 
+                len);
+                continue;
+            }
             while(1){
                 len = sizeof(cliaddr);  
                 memset(&cliaddr,0,sizeof(cliaddr));
