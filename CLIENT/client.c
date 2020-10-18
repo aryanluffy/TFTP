@@ -7,10 +7,12 @@
 #include <arpa/inet.h> 
 #include <netinet/in.h>
 #include<sys/stat.h>
+#include<errno.h>
 #include <fcntl.h> 
+extern int errno; 
   
 #define PORT     8080 
-#define MAXLINE 1024 
+#define MAXN 1024 
 // 1 is read
 // 2 is write
 // 3 is data
@@ -21,6 +23,8 @@ int port,sockfd,fd,pos_in_file;
 char* filename;
 char *ip_address;
 char *block_number;
+int NumberOfBytesReceived;
+
 void init_bn(){
     block_number[0]=1;
     block_number[1]=1;
@@ -52,8 +56,8 @@ int port_validator(char *port){
 char* read_request(char *filename,char *mode){
     struct sockaddr_in servaddr; 
     memset(&servaddr, 0, sizeof(servaddr)); 
-    char *hello=malloc(1000);
-    char *response=malloc(520);
+    char *hello=malloc(MAXN);
+    char *response=malloc(MAXN);
     
     //To assign op code
     hello[0]='0';
@@ -81,21 +85,23 @@ char* read_request(char *filename,char *mode){
     servaddr.sin_port = htons(port); 
     servaddr.sin_addr.s_addr = inet_addr(ip_address); 
     int n, len; 
-    while(
-    !sendto(sockfd, (const char *)hello, strlen(hello), 
+    sendto(sockfd, (const char *)hello, strlen(hello), 
         MSG_CONFIRM, (const struct sockaddr *) &servaddr,  
-            sizeof(servaddr))
-    );    
-    n = recvfrom(sockfd, (char *)response, MAXLINE,  
+            sizeof(servaddr));    
+    len=sizeof(servaddr);
+    NumberOfBytesReceived = recvfrom(sockfd, (char *)response, MAXN,  
                 MSG_WAITALL, (struct sockaddr *) &servaddr, 
                 &len);
+    if(NumberOfBytesReceived==-1){
+        printf("errno = %d\n",errno);
+    }
     return response;
 }
 char* write_request(char *filename,char *mode){
     struct sockaddr_in servaddr; 
     memset(&servaddr, 0, sizeof(servaddr)); 
-    char *hello=malloc(1000);
-    char *response=malloc(520);
+    char *hello=malloc(MAXN);
+    char *response=malloc(MAXN);
     hello[0]='0';
     hello[1]='2';
     char* helloitr=hello+2;
@@ -119,13 +125,11 @@ char* write_request(char *filename,char *mode){
     servaddr.sin_family = AF_INET; 
     servaddr.sin_port = htons(port); 
     servaddr.sin_addr.s_addr = inet_addr(ip_address); 
-    int n, len; 
-    while(
-    !sendto(sockfd, (const char *)hello, strlen(hello), 
+    int n, len=sizeof(servaddr); 
+    sendto(sockfd, (const char *)hello, strlen(hello), 
         MSG_CONFIRM, (const struct sockaddr *) &servaddr,  
-            sizeof(servaddr))
-    );
-    n = recvfrom(sockfd, (char *)response, MAXLINE,  
+            sizeof(servaddr));
+    NumberOfBytesReceived = recvfrom(sockfd, (char *)response, MAXN,  
                 MSG_WAITALL, (struct sockaddr *) &servaddr, 
                 &len);
     return response;
@@ -133,14 +137,13 @@ char* write_request(char *filename,char *mode){
 char* acknowledgement(){
     struct sockaddr_in servaddr; 
     memset(&servaddr, 0, sizeof(servaddr)); 
-    char *hello=malloc(1000);
-    char *response=malloc(520);
+    char *hello=malloc(MAXN);
+    char *response=malloc(MAXN);
     //To assign op code
     hello[0]='0';
     hello[1]='4';
     hello[2]='3';
     hello[3]='7';
-    hello[4]='\0';
     servaddr.sin_family = AF_INET; 
     servaddr.sin_port = htons(port); 
     servaddr.sin_addr.s_addr = inet_addr(ip_address); 
@@ -148,32 +151,27 @@ char* acknowledgement(){
     increment_bn();
     hello[2]=block_number[0];
     hello[3]=block_number[1];
-    while(
-    !sendto(sockfd, (const char *)hello, strlen(hello), 
+    len=sizeof(servaddr);
+    sendto(sockfd, (const char *)hello, 4, 
         MSG_CONFIRM, (const struct sockaddr *) &servaddr,  
-            sizeof(servaddr))
-    );
-    n=recvfrom(sockfd,(char *)response,MAXLINE,
+            sizeof(servaddr));
+    if((NumberOfBytesReceived= recvfrom(sockfd,(char *)response,MAXN,
                         MSG_WAITALL,(struct sockaddr *)&servaddr,
-                        &len);
+                        &len))==-1){
+                printf("errno = %d\n",errno);
+    };
     return response;
 }
-char* send_data(char *data){
+char* send_data(char *data,int count){
     struct sockaddr_in servaddr; 
     memset(&servaddr, 0, sizeof(servaddr)); 
-    char *hello=malloc(1000);
-    char *response=malloc(520);
+    char *hello=malloc(MAXN);
+    char *response=malloc(MAXN);
     hello[0]='0';
     hello[1]='3';
     hello[2]='3';
     hello[3]='7';
-    char* helloitr=hello+4;
-    while(*data!='\0'){
-        *helloitr=*data;
-        helloitr++;
-        data++;
-    }
-    *helloitr='\0';
+    for(int i=0;i<count;i++)hello[i+4]=data[i];
     increment_bn();
     hello[2]=block_number[0];
     hello[3]=block_number[1];
@@ -181,13 +179,12 @@ char* send_data(char *data){
     servaddr.sin_family = AF_INET; 
     servaddr.sin_port = htons(port); 
     servaddr.sin_addr.s_addr = inet_addr(ip_address); 
-    int n, len; 
-    while(
-    !sendto(sockfd, (const char *)hello, strlen(hello), 
+    int n, len=sizeof(servaddr); 
+    n=sendto(sockfd, (const char *)hello, count+4, 
         MSG_CONFIRM, (const struct sockaddr *) &servaddr,  
-            sizeof(servaddr))
-    );
-    n = recvfrom(sockfd, (char *)response, MAXLINE,  
+            sizeof(servaddr));
+    printf("%d bytes sent\n",n);
+    NumberOfBytesReceived = recvfrom(sockfd, (char *)response, MAXN,  
                 MSG_WAITALL, (struct sockaddr *) &servaddr, 
                 &len);
     return response;
@@ -210,7 +207,7 @@ int main(int argc,char ** argv) {
         perror("socket creation failed"); 
         exit(EXIT_FAILURE); 
     } 
-    filename=malloc(1000);
+    filename=malloc(MAXN);
     while(1){
         printf("Available Functions:\n1)GET \n2)PUT \n3)Exit\n");
         printf("Enter 1 or 2 or 3\n");
@@ -224,28 +221,17 @@ int main(int argc,char ** argv) {
             // printf("%s\n",filename);
             char *response=read_request(filename,"ascii");
             fd=open(filename,O_RDWR|O_CREAT,0777);
-            char *towritetofile=malloc(600);
+            char *towritetofile=malloc(MAXN);
             char *towritetofileitr=towritetofile;
-            char *responseitr=response+4;
-            while(*responseitr!='\0'){
-                *towritetofileitr=*responseitr;
-                responseitr++;
-                towritetofileitr++;
-            }
-            *towritetofileitr='\0';
-            write(fd,towritetofile,strlen(towritetofile));
-            while(strlen(response=acknowledgement())>4){
-                responseitr=response+4;
-                towritetofileitr=towritetofile;
-                while(*responseitr!='\0'){
-                    *towritetofileitr=*responseitr;
-                    responseitr++;
-                    towritetofileitr++;
-                }
-                *towritetofileitr='\0';
-                write(fd,towritetofile,strlen(towritetofile));     
+            for(int i=4;i<NumberOfBytesReceived;i++)towritetofile[i-4]=response[i];
+            while(NumberOfBytesReceived>4){
+                write(fd,towritetofile,NumberOfBytesReceived-4);
+                response=acknowledgement();     
+                for(int i=4;i<NumberOfBytesReceived;i++)towritetofile[i-4]=response[i];
+                // printf("NumberOfbytesRead = %d\n",NumberOfBytesReceived);
             }
             close(fd); 
+            printf("GET REQUEST FULLFILLED\n");
             continue;
         }
         printf("Enter file name\n");
@@ -256,16 +242,14 @@ int main(int argc,char ** argv) {
             continue;
         }
         char *response=write_request(filename,"ascii");
+        char *data=malloc(MAXN);
         while(1){
-            char *data=malloc(1000);
             int count=read(fd,data,512);
-            printf("count = %d\n",count);
-            data[count]='\0';
+            send_data(data,count);
             if(count==0)break;
-            send_data(data);
-            printf("THE CURRENT BLOCK IS %d\n",block_number[0]*256+block_number[1]);
         }
         close(fd);
+        printf("PUT REQUEST FULFILLED\n");
     }
     close(sockfd); 
     return 0; 

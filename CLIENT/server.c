@@ -154,8 +154,6 @@ int main(int argc,char **argv) {
                 // printf("%s\n",buffer);
                 if(response_acknowledgement(cliaddr,len)==-1)break;
             }
-            close(fd);
-            printf("GET REQUEST FULFILLED\n");
         }
         else if(buffer[1]=='2'){
             for(int i=2;i<=n-7;i++)filename[i-2]=buffer[i];
@@ -175,7 +173,6 @@ int main(int argc,char **argv) {
                 }
             }
             close(fd);
-            printf("PUT REQUEST FULLFILLED\n");
         }
         
     }
