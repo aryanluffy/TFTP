@@ -81,9 +81,11 @@ void response_write_request(struct sockaddr_in cliaddr,int len){
     toput[2]=block_number[0];
     toput[3]=block_number[1];
     toput[4]='\0';
-    sendto(sockfd, (const char *)toput, strlen(toput),  
+    while(
+    !sendto(sockfd, (const char *)toput, strlen(toput),  
         MSG_CONFIRM, (const struct sockaddr *) &cliaddr, 
-            len); 
+            len) 
+    );
 }
 
 //response is data
@@ -105,9 +107,11 @@ int response_acknowledgement(struct sockaddr_in cliaddr,int len){
         increment_bn();
         toput[2]=block_number[0];
         toput[3]=block_number[1];
-        int x=sendto(sockfd, (const char *)toput, strlen(toput),  
-                    MSG_CONFIRM, (const struct sockaddr *) &cliaddr, 
-                    len);
+        while(
+        !sendto(sockfd, (const char *)toput, strlen(toput),  
+                MSG_CONFIRM, (const struct sockaddr *) &cliaddr, 
+                len) 
+        );
         if(strlen(toput)==4)return -1;
         return 0;
 }

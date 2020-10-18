@@ -81,9 +81,11 @@ char* read_request(char *filename,char *mode){
     servaddr.sin_port = htons(port); 
     servaddr.sin_addr.s_addr = inet_addr(ip_address); 
     int n, len; 
-    sendto(sockfd, (const char *)hello, strlen(hello), 
+    while(
+    !sendto(sockfd, (const char *)hello, strlen(hello), 
         MSG_CONFIRM, (const struct sockaddr *) &servaddr,  
-            sizeof(servaddr));     
+            sizeof(servaddr))
+    );    
     n = recvfrom(sockfd, (char *)response, MAXLINE,  
                 MSG_WAITALL, (struct sockaddr *) &servaddr, 
                 &len);
@@ -118,10 +120,11 @@ char* write_request(char *filename,char *mode){
     servaddr.sin_port = htons(port); 
     servaddr.sin_addr.s_addr = inet_addr(ip_address); 
     int n, len; 
-    sendto(sockfd, (const char *)hello, strlen(hello), 
+    while(
+    !sendto(sockfd, (const char *)hello, strlen(hello), 
         MSG_CONFIRM, (const struct sockaddr *) &servaddr,  
-            sizeof(servaddr));
-          
+            sizeof(servaddr))
+    );
     n = recvfrom(sockfd, (char *)response, MAXLINE,  
                 MSG_WAITALL, (struct sockaddr *) &servaddr, 
                 &len);
@@ -145,9 +148,11 @@ char* acknowledgement(){
     increment_bn();
     hello[2]=block_number[0];
     hello[3]=block_number[1];
-    sendto(sockfd, (const char *)hello, strlen(hello), 
+    while(
+    !sendto(sockfd, (const char *)hello, strlen(hello), 
         MSG_CONFIRM, (const struct sockaddr *) &servaddr,  
-            sizeof(servaddr));
+            sizeof(servaddr))
+    );
     n=recvfrom(sockfd,(char *)response,MAXLINE,
                         MSG_WAITALL,(struct sockaddr *)&servaddr,
                         &len);
@@ -177,9 +182,11 @@ char* send_data(char *data){
     servaddr.sin_port = htons(port); 
     servaddr.sin_addr.s_addr = inet_addr(ip_address); 
     int n, len; 
-    int x=sendto(sockfd, (const char *)hello, strlen(hello), 
+    while(
+    !sendto(sockfd, (const char *)hello, strlen(hello), 
         MSG_CONFIRM, (const struct sockaddr *) &servaddr,  
-            sizeof(servaddr));
+            sizeof(servaddr))
+    );
     n = recvfrom(sockfd, (char *)response, MAXLINE,  
                 MSG_WAITALL, (struct sockaddr *) &servaddr, 
                 &len);
